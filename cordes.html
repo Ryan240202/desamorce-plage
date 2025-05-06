@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Désamorce sur la plage 🌴</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Trebuchet MS', sans-serif;
+      background-color: #87ceeb;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sky {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60%;
+      background: #87ceeb;
+      border-bottom: 30px solid #f5e242;
+      z-index: -1;
+    }
+
+    .beach {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 40%;
+      background: #f5e242;
+      border-radius: 0 0 100px 100px;
+      z-index: -2;
+    }
+
+    .sun {
+      position: absolute;
+      top: 10%;
+      left: 10%;
+      width: 120px;
+      height: 120px;
+      background-color: #ffcc00;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 20px 10px rgba(255, 204, 0, 0.5);
+    }
+
+    h1 {
+      margin-top: 40px;
+      color: #fff;
+      background-color: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .corde {
+      width: 20px;
+      height: 150px;
+      margin: 20px;
+      background-color: #9e7d4d;
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: opacity 0.4s, transform 0.3s;
+      opacity: 1;
+    }
+
+    .corde.coupee {
+      opacity: 0.3;
+      transform: rotate(10deg) translateY(20px);
+      pointer-events: none;
+    }
+
+    .corde::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 25px;
+      height: 25px;
+      background-color: #5c3c1a;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .cordes-container {
+      display: none;
+      justify-content: center;
+      margin-top: 60px;
+      gap: 30px;
+    }
+
+    #resultat {
+      font-size: 1.5em;
+      margin-top: 40px;
+      color: #fff;
+      background-color: rgba(0,0,0,0.5);
+      padding: 15px 25px;
+      border-radius: 10px;
+    }
+
+    .plage-input {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .plage-input input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 2px solid #000;
+    }
+
+    .plage-input button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      background-color: #008CBA;
+      color: white;
+      cursor: pointer;
+    }
+
+    .plage-input button:hover {
+      background-color: #005f6b;
+    }
+  </style>
+</head>
+<body>
+  <div class="sky"></div>
+  <div class="beach"></div>
+  <div class="sun"></div>
+
+  <h1>🌴 Coupe les cordes dans le bon ordre !</h1>
+
+  <div class="plage-input">
+    <input type="text" id="nomPlage" placeholder="Entrez le nom de la plage" />
+    <button onclick="changerCombinaison()">Lancer la partie</button>
+  </div>
+
+  <div class="cordes-container" id="cordesContainer">
+    <div id="corde-rouge" class="corde" style="background-color: #ff0000;"></div>
+    <div id="corde-bleu" class="corde" style="background-color: #0000ff;"></div>
+    <div id="corde-vert" class="corde" style="background-color: #008000;"></div>
+    <div id="corde-jaune" class="corde" style="background-color: #ffd700;"></div>
+  </div>
+
+  <div id="resultat"></div>
+
+  <script>
+    const combinaisons = {
+      "plage des cocos fous": ["rouge", "bleu", "vert", "jaune"],
+      "baie des crabes rieurs": ["bleu", "vert", "jaune", "rouge"],
+      "anse du sable qui pique": ["vert", "jaune", "rouge", "bleu"],
+      "plage des mouettes bavardes": ["jaune", "rouge", "bleu", "vert"],
+      "crique des coquillages chanteurs": ["rouge", "vert", "jaune", "bleu"],
+      "plage du maillot perdu": ["bleu", "jaune", "rouge", "vert"],
+      "baie des vagues capricieuses": ["vert", "bleu", "jaune", "rouge"],
+      "anse des étoiles de mer dansantes": ["jaune", "vert", "bleu", "rouge"],
+      "plage des palmiers farceurs": ["rouge", "bleu", "jaune", "vert"],
+      "crique du soleil farceur": ["bleu", "vert", "rouge", "jaune"]
+    };
+
+    let progression = [];
+    let ordreCorrect = [];
+
+    const afficherMessage = (texte, succes) => {
+      const el = document.getElementById('resultat');
+      el.textContent = texte;
+      el.style.color = succes ? 'lightgreen' : 'crimson';
+    };
+
+    const verifierOrdre = () => {
+      if (progression.length === ordreCorrect.length) {
+        const estCorrect = progression.every((val, i) => val === ordreCorrect[i]);
+        afficherMessage(estCorrect ? '🌊 Bien joué ! Bonne séquence !' : '💥 Mauvaise séquence ! Essaie encore.', estCorrect);
+      }
+    };
+
+    const couperCorde = (couleur) => {
+      const element = document.getElementById('corde-' + couleur);
+      if (!element.classList.contains('coupee')) {
+        element.classList.add('coupee');
+        progression.push(couleur);
+        verifierOrdre();
+      }
+    };
+
+    const changerCombinaison = () => {
+      const nomPlage = document.getElementById('nomPlage').value.trim().toLowerCase();
+      if (!combinaisons.hasOwnProperty(nomPlage)) {
+        afficherMessage('💥 Plage inconnue ! Essaie un autre nom.', false);
+        return;
+      }
+
+      ordreCorrect = combinaisons[nomPlage];
+      progression = [];
+
+      const cordesContainer = document.getElementById('cordesContainer');
+      cordesContainer.style.display = 'flex';
+
+      // Réinitialiser l'état des cordes
+      ['rouge', 'bleu', 'vert', 'jaune'].forEach(couleur => {
+        const corde = document.getElementById('corde-' + couleur);
+        corde.classList.remove('coupee');
+      });
+
+      afficherMessage('🔑 Trouve la bonne combinaison en coupant les cordes dans l\'ordre correct !', true);
+    };
+
+    ['rouge', 'bleu', 'vert', 'jaune'].forEach(couleur => {
+      document.getElementById('corde-' + couleur).addEventListener('click', () => couperCorde(couleur));
+    });
+  </script>
+</body>
+</html>
